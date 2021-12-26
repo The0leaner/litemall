@@ -3,8 +3,9 @@
 
     <!-- 查询和其他操作 -->
     <div class="filter-container">
-      <el-input v-model="listQuery.goodsSn" clearable class="filter-item" style="width: 200px;" placeholder="请输入商品编号"/>
-      <el-input v-model="listQuery.name" clearable class="filter-item" style="width: 200px;" placeholder="请输入商品名称"/>
+      <el-input v-model="listQuery.goodsId" clearable class="filter-item" style="width: 160px;" placeholder="请输入商品ID" />
+      <el-input v-model="listQuery.goodsSn" clearable class="filter-item" style="width: 160px;" placeholder="请输入商品编号" />
+      <el-input v-model="listQuery.name" clearable class="filter-item" style="width: 160px;" placeholder="请输入商品名称" />
       <el-button class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter">查找</el-button>
       <el-button class="filter-item" type="primary" icon="el-icon-edit" @click="handleCreate">添加</el-button>
       <el-button :loading="downloadLoading" class="filter-item" type="primary" icon="el-icon-download" @click="handleDownload">导出</el-button>
@@ -16,8 +17,11 @@
       <el-table-column type="expand">
         <template slot-scope="props">
           <el-form label-position="left" class="table-expand">
+            <el-form-item label="商品编号">
+              <span>{{ props.row.goodsSn }}</span>
+            </el-form-item>
             <el-form-item label="宣传画廊">
-              <img v-for="pic in props.row.gallery" :key="pic" :src="pic" class="gallery">
+              <el-image v-for="pic in props.row.gallery" :key="pic" :src="pic" class="gallery" :preview-src-list="props.row.gallery" style="width: 40px; height: 40px" />
             </el-form-item>
             <el-form-item label="商品介绍">
               <span>{{ props.row.brief }}</span>
@@ -34,17 +38,18 @@
             <el-form-item label="品牌商ID">
               <span>{{ props.row.brandId }}</span>
             </el-form-item>
+
           </el-form>
         </template>
       </el-table-column>
 
-      <el-table-column align="center" label="商品编号" prop="goodsSn"/>
+      <el-table-column align="center" label="商品ID" prop="id" />
 
-      <el-table-column align="center" min-width="100" label="名称" prop="name"/>
+      <el-table-column align="center" min-width="100" label="名称" prop="name" />
 
       <el-table-column align="center" property="iconUrl" label="图片">
         <template slot-scope="scope">
-          <img :src="scope.row.picUrl" width="40">
+          <el-image :src="thumbnail(scope.row.picUrl)" :preview-src-list="toPreview(scope.row, scope.row.picUrl)" style="width: 40px; height: 40px" />
         </template>
       </el-table-column>
 
@@ -57,15 +62,15 @@
       <el-table-column align="center" label="详情" prop="detail">
         <template slot-scope="scope">
           <el-dialog :visible.sync="detailDialogVisible" title="商品详情">
-            <div v-html="goodsDetail"/>
+            <div class="goods-detail-box" v-html="goodsDetail" />
           </el-dialog>
           <el-button type="primary" size="mini" @click="showDetail(scope.row.detail)">查看</el-button>
         </template>
       </el-table-column>
 
-      <el-table-column align="center" label="专柜价格" prop="counterPrice"/>
+      <el-table-column align="center" label="市场售价" prop="counterPrice" />
 
-      <el-table-column align="center" label="当前价格" prop="retailPrice"/>
+      <el-table-column align="center" label="当前价格" prop="retailPrice" />
 
       <el-table-column align="center" label="是否新品" prop="isNew">
         <template slot-scope="scope">
@@ -105,6 +110,7 @@
 <style>
   .table-expand {
     font-size: 0;
+    padding-left: 60px;
   }
   .table-expand label {
     width: 100px;
@@ -118,18 +124,24 @@
     width: 80px;
     margin-right: 10px;
   }
+  .goods-detail-box img {
+    width: 100%;
+  }
 </style>
 
 <script>
 import { listGoods, deleteGoods } from '@/api/goods'
 import BackToTop from '@/components/BackToTop'
 import Pagination from '@/components/Pagination' // Secondary package based on el-pagination
+import { thumbnail, toPreview } from '@/utils/index'
 
 export default {
   name: 'GoodsList',
   components: { BackToTop, Pagination },
   data() {
     return {
+      thumbnail,
+      toPreview,
       list: [],
       total: 0,
       listLoading: true,
@@ -182,8 +194,7 @@ export default {
           title: '成功',
           message: '删除成功'
         })
-        const index = this.list.indexOf(row)
-        this.list.splice(index, 1)
+        this.getList()
       }).catch(response => {
         this.$notify.error({
           title: '失败',
